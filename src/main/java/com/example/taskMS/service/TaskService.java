@@ -24,28 +24,33 @@ public class TaskService {
     private final ProjectRepository projectRepository;
 
     public TaskDTO createTask(TaskDTO taskDTO) {
-        // 1. Find the Project and User (Assignee)
+        // 1. Get the currently logged-in user's email from Spring Security
+        String currentUserEmail = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication().getName();
+
+        User creator = userRepository.findByEmail(currentUserEmail)
+                .orElseThrow(() -> new RuntimeException("Logged in user not found"));
+
+        // 2. Find the Project and Assignee
         Project project = projectRepository.findById(taskDTO.getProjectId())
                 .orElseThrow(() -> new RuntimeException("Project not found"));
 
         User assignee = userRepository.findById(taskDTO.getAssigneeId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException("Assignee not found"));
 
-        // 2. Convert DTO to Entity
+        // 3. Build the Task with the Creator
         Task task = Task.builder()
                 .title(taskDTO.getTitle())
                 .description(taskDTO.getDescription())
-                .status(Status.TODO) // Business Rule: Always start as TODO
+                .status(Status.TODO)
                 .priority(Priority.valueOf(taskDTO.getPriority()))
                 .dueDate(taskDTO.getDueDate())
                 .project(project)
                 .assignee(assignee)
+                .creator(creator) // <--- THIS WAS THE MISSING LINK
                 .build();
 
-        // 3. Save to DB
         Task savedTask = taskRepository.save(task);
-
-        // 4. Return the Response DTO
         return mapToDTO(savedTask);
     }
 

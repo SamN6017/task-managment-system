@@ -5,6 +5,7 @@ import com.example.taskMS.model.User;
 import com.example.taskMS.model.enums.Role;
 import com.example.taskMS.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder; // Use this interface
 import org.springframework.stereotype.Service;
 
 @Service
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder; // Spring picks up your BCrypt Bean
 
     public User registerUser(UserRegistrationDTO registrationDTO) {
         if (userRepository.existsByEmail(registrationDTO.getEmail())) {
@@ -21,8 +23,8 @@ public class UserService {
         User user = User.builder()
                 .name(registrationDTO.getName())
                 .email(registrationDTO.getEmail())
-                .password(registrationDTO.getPassword()) // Plain text for now
-                .role(Role.USER) // Default role
+                .password(passwordEncoder.encode(registrationDTO.getPassword())) // ENCODE HERE
+                .role(Role.USER)
                 .build();
 
         return userRepository.save(user);
