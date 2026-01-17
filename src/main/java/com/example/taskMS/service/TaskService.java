@@ -75,4 +75,20 @@ public class TaskService {
         dto.setAssigneeName(task.getAssignee().getName());
         return dto;
     }
+
+    public List<TaskDTO> getMyTasks() {
+        // 1. Get the email from the Security Context (JWT)
+        String currentUserEmail = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication().getName();
+
+        // 2. Find the User
+        User user = userRepository.findByEmail(currentUserEmail)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // 3. Get tasks assigned to this user and map to DTOs
+        return taskRepository.findByAssigneeId(user.getId())
+                .stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+    }
 }

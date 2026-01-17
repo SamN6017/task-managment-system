@@ -24,4 +24,9 @@ public class TaskController {
     public ResponseEntity<List<TaskDTO>> getTasksByProject(@PathVariable Long projectId) {
         return ResponseEntity.ok(taskService.getAllTasksByProject(projectId));
     }
+
+    @GetMapping("/my-tasks")
+    public ResponseEntity<List<TaskDTO>> getMyTasks() {
+        return ResponseEntity.ok(taskService.getMyTasks());
+    }
 }
