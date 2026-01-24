@@ -1,9 +1,11 @@
 package com.example.taskMS.controller;
 
+import com.example.taskMS.dto.UserProfileDTO;
 import com.example.taskMS.dto.UserRegistrationDTO;
 import com.example.taskMS.model.User;
 import com.example.taskMS.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -16,5 +18,10 @@ public class UserController {
     @PostMapping("/register")
     public User register(@RequestBody UserRegistrationDTO registrationDTO) {
         return userService.registerUser(registrationDTO);
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<UserProfileDTO> getMyProfile() {
+        return ResponseEntity.ok(userService.getCurrentUserProfile());
     }
 }

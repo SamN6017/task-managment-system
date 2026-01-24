@@ -1,5 +1,6 @@
 package com.example.taskMS.service;
 
+import com.example.taskMS.dto.UserProfileDTO;
 import com.example.taskMS.dto.UserRegistrationDTO;
 import com.example.taskMS.model.User;
 import com.example.taskMS.model.enums.Role;
@@ -28,5 +29,21 @@ public class UserService {
                 .build();
 
         return userRepository.save(user);
+    }
+
+    public UserProfileDTO getCurrentUserProfile() {
+        // Get the email from the authenticated token
+        String email = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication().getName();
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return UserProfileDTO.builder()
+                .id(user.getId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .role(user.getRole().name())
+                .build();
     }
 }
