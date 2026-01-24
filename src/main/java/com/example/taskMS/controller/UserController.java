@@ -15,11 +15,6 @@ public class UserController {
 
     private final UserService userService;
 
-    @PostMapping("/register")
-    public User register(@RequestBody UserRegistrationDTO registrationDTO) {
-        return userService.registerUser(registrationDTO);
-    }
-
     @GetMapping("/me")
     public ResponseEntity<UserProfileDTO> getMyProfile() {
         return ResponseEntity.ok(userService.getCurrentUserProfile());

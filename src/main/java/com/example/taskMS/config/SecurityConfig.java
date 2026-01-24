@@ -41,20 +41,19 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // 1. Disable CSRF (not needed for stateless JWT APIs)
                 .csrf(csrf -> csrf.disable())
-                .cors(cors -> cors.configure(http))
-                // 2. Set Session Management to Stateless
+                // Explicitly point to your corsConfigurationSource bean
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-                // 3. Define Permissions
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()      // Anyone can login
-                        .requestMatchers("/api/users/register").permitAll() // Anyone can register
-                        .anyRequest().authenticated()                     // Everything else is locked
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/setup/register-company").permitAll()
+                        .requestMatchers("/api/users/create-employee").hasRole("ADMIN")
+                        .anyRequest().authenticated()
                 );
 
-        // 4. Add our JWT Filter before the standard Username/Password filter
         http.addFilterBefore(authTokenFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

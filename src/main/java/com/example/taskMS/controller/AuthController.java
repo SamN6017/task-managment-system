@@ -21,22 +21,26 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest) {
-        // 1. Authenticate the user using Spring Security
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
 
-        // 2. Set the authentication in the context
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            String jwt = jwtUtils.generateTokenFromUsername(authentication.getName());
 
-        // 3. Generate the JWT
-        String jwt = jwtUtils.generateTokenFromUsername(authentication.getName());
+            org.springframework.security.core.userdetails.User userDetails =
+                    (org.springframework.security.core.userdetails.User) authentication.getPrincipal();
 
-        // 4. Get User Details to return in response
-        org.springframework.security.core.userdetails.User userDetails =
-                (org.springframework.security.core.userdetails.User) authentication.getPrincipal();
+            String role = userDetails.getAuthorities().iterator().next().getAuthority();
+            return ResponseEntity.ok(new AuthResponse(jwt, userDetails.getUsername(), role));
 
-        String role = userDetails.getAuthorities().iterator().next().getAuthority();
-
-        return ResponseEntity.ok(new AuthResponse(jwt, userDetails.getUsername(), role));
+        } catch (org.springframework.security.authentication.BadCredentialsException e) {
+            System.out.println("DEBUG: Invalid Password for " + loginRequest.getEmail());
+            return ResponseEntity.status(401).body("Error: Invalid password.");
+        } catch (Exception e) {
+            System.out.println("DEBUG: Authentication Error: " + e.getMessage());
+            e.printStackTrace(); // This will show the full error in your Java console
+            return ResponseEntity.status(500).body("Error: " + e.getMessage());
+        }
     }
 }
