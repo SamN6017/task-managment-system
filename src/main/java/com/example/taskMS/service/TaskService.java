@@ -10,10 +10,13 @@ import com.example.taskMS.repository.TaskRepository;
 import com.example.taskMS.repository.UserRepository;
 import com.example.taskMS.repository.ProjectRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toList;
 
 @Service
 @RequiredArgsConstructor
@@ -58,7 +61,7 @@ public class TaskService {
         return taskRepository.findByProjectId(projectId)
                 .stream()
                 .map(this::mapToDTO)
-                .collect(Collectors.toList());
+                .collect(toList());
     }
 
     // Helper method to convert Entity -> DTO (Prevents Recursion)
@@ -89,6 +92,50 @@ public class TaskService {
         return taskRepository.findByAssigneeId(user.getId())
                 .stream()
                 .map(this::mapToDTO)
-                .collect(Collectors.toList());
+                .collect(toList());
     }
+
+    public List<TaskDTO> getTeamTasks() {
+        // 1. Get the logged-in user
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User currentUser = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        List<Task> tasks;
+
+        // 2. Determine Visibility based on Role
+        switch (currentUser.getRole()) {
+            case CEO:
+                // CEO sees EVERYTHING in the company
+                tasks = taskRepository.findByAssigneeCompanyId(currentUser.getCompany().getId());
+                break;
+
+            case MANAGER:
+            case TEAM_LEADER:
+                // Leaders see tasks of people reporting to them
+                tasks = taskRepository.findByAssigneeReportsToId(currentUser.getId());
+                break;
+
+            default:
+                // Team Members only see their own tasks
+                tasks = taskRepository.findByAssigneeId(currentUser.getId());
+                break;
+        }
+
+        return tasks.stream().map(this::convertToDTO).toList();
+    }
+
+    private TaskDTO convertToDTO(Task task) {
+        return TaskDTO.builder()
+                .id(task.getId())
+                .title(task.getTitle())
+                .description(task.getDescription())
+                .status(String.valueOf(task.getStatus()))
+                // We only send the name or ID of the assignee, not the whole User object
+                .assigneeName(task.getAssignee() != null ? task.getAssignee().getName() : "Unassigned")
+                .assigneeId(task.getAssignee() != null ? task.getAssignee().getId() : null)
+                .build();
+    }
+
+
 }

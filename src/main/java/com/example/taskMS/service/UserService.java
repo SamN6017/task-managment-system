@@ -14,6 +14,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder; // Use this interface
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -26,7 +28,7 @@ public class UserService {
         // Get the email from the authenticated token
         String email = org.springframework.security.core.context.SecurityContextHolder
                 .getContext().getAuthentication().getName();
-
+        System.out.println("email: " + email);
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -39,23 +41,23 @@ public class UserService {
     }
 
     public User createEmployee(UserRegistrationDTO dto) {
-        // 1. Get the Admin's info from the JWT
-        String adminEmail = SecurityContextHolder.getContext().getAuthentication().getName();
-        User admin = userRepository.findByEmail(adminEmail)
-                .orElseThrow(() -> new RuntimeException("Admin not found"));
+        // 1. Get current logged-in user (The one performing the creation)
+        String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        User creator = userRepository.findByEmail(currentEmail)
+                .orElseThrow(() -> new RuntimeException("Creator not found"));
 
-        // 2. Security Check (Manual check if not using @PreAuthorize)
-        if (admin.getRole() != Role.ADMIN) {
-            throw new RuntimeException("Only Admins can create users");
-        }
+        // 2. Fetch the assigned Manager/Supervisor
+        User supervisor = userRepository.findById(dto.getReportsToId())
+                .orElseThrow(() -> new RuntimeException("Supervisor not found"));
 
-        // 3. Create the new User and link to the Admin's Company
+        // 3. Create New User
         User newUser = User.builder()
                 .name(dto.getName())
                 .email(dto.getEmail())
-                .password(passwordEncoder.encode(dto.getPassword())) // Admin sets temporary password
-                .role(Role.USER) // Default role for new hires
-                .company(admin.getCompany()) // <--- This creates the "Company Wall"
+                .password(passwordEncoder.encode(dto.getPassword()))
+                .role(dto.getRole()) // CEO assigns the role (MANAGER, TEAM_LEADER, etc.)
+                .company(creator.getCompany()) // Must be same company
+                .reportsTo(supervisor) // Links them to the hierarchy
                 .build();
 
         return userRepository.save(newUser);
@@ -63,22 +65,43 @@ public class UserService {
 
     @Transactional
     public String registerNewCompany(CompanySignupDTO dto) {
-        // 1. Create and Save the Company
+        // 1. Create Company
         Company company = Company.builder()
                 .name(dto.getCompanyName())
                 .build();
         company = companyRepository.save(company);
 
-        // 2. Create and Save the first Admin for that company
-        User admin = User.builder()
+        // 2. Create the CEO (The first user)
+        User ceo = User.builder()
                 .name(dto.getAdminName())
                 .email(dto.getAdminEmail())
                 .password(passwordEncoder.encode(dto.getAdminPassword()))
-                .role(Role.ADMIN) // Hardcoded as ADMIN
-                .company(company) // Linked to the new company
+                .role(Role.CEO) // Set role to CEO
+                .company(company)
                 .build();
-        userRepository.save(admin);
 
-        return "Company and Admin registered successfully!";
+        userRepository.save(ceo);
+        return "Company registered successfully with CEO: " + ceo.getName();
+    }
+
+    public List<UserProfileDTO> getMySubordinates() {
+        // 1. Identify the logged-in leader
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User leader = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // 2. Fetch people who report directly to this leader
+        // You will need to add 'findByReportsToId' to your UserRepository
+        List<User> subordinates = userRepository.findByReportsToId(leader.getId());
+
+        // 3. Convert to DTOs for the frontend
+        return subordinates.stream()
+                .map(sub -> UserProfileDTO.builder()
+                        .id(sub.getId())
+                        .name(sub.getName())
+                        .email(sub.getEmail())
+                        .role(sub.getRole().name())
+                        .build())
+                .toList();
     }
 }

@@ -4,6 +4,7 @@ import com.example.taskMS.dto.TaskDTO;
 import com.example.taskMS.service.TaskService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,7 +16,8 @@ public class TaskController {
 
     private final TaskService taskService;
 
-    @PostMapping
+    @PreAuthorize("hasAnyRole('TEAM_LEADER', 'MANAGER', 'CEO')")
+    @PostMapping("/create")
     public ResponseEntity<TaskDTO> createTask(@RequestBody TaskDTO taskDTO) {
         return ResponseEntity.ok(taskService.createTask(taskDTO));
     }
@@ -28,5 +30,10 @@ public class TaskController {
     @GetMapping("/my-tasks")
     public ResponseEntity<List<TaskDTO>> getMyTasks() {
         return ResponseEntity.ok(taskService.getMyTasks());
+    }
+
+    @GetMapping("/team-dashboard")
+    public ResponseEntity<List<TaskDTO>> getTeamDashboard() {
+        return ResponseEntity.ok(taskService.getTeamTasks());
     }
 }

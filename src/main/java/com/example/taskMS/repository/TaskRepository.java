@@ -4,6 +4,8 @@ import com.example.taskMS.model.Task;
 import com.example.taskMS.model.enums.Priority;
 import com.example.taskMS.model.enums.Status;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import java.util.List;
 
@@ -27,4 +29,14 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     // 5. New: Find overdue tasks for a specific user
     // Useful for a "Dashboard" feature to show what needs immediate attention
     List<Task> findByAssigneeIdAndStatusNot(Long userId, Status status);
+
+    // Find tasks where the assignee reports to the logged-in user
+    @Query("SELECT t FROM Task t WHERE t.assignee.reportsTo.id = :bossId")
+    List<Task> findSubordinateTasks(@Param("bossId") Long bossId);
+
+    // Find all tasks for everyone who reports to a specific boss (Direct Reports)
+    List<Task> findByAssigneeReportsToId(Long bossId);
+
+    // Advanced: Find all tasks in the company (For the CEO)
+    List<Task> findByAssigneeCompanyId(Long companyId);
 }

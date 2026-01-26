@@ -42,15 +42,22 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
-                // Explicitly point to your corsConfigurationSource bean
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/setup/register-company").permitAll()
-                        .requestMatchers("/api/users/create-employee").hasRole("ADMIN")
+
+                        // 1. Only CEOs and Admins can create Managers or broad company projects
+                        .requestMatchers("/api/users/create-manager").hasAnyRole("ADMIN", "CEO")
+
+                        // 2. Managers can create Team Leaders and Members
+                        .requestMatchers("/api/users/create-employee").hasAnyRole("MANAGER", "CEO")
+
+                        // 3. Team Leaders and above can create/assign Tasks
+                        .requestMatchers("/api/tasks/create").hasAnyRole("TEAM_LEADER", "MANAGER", "CEO")
+
                         .anyRequest().authenticated()
                 );
 
@@ -58,7 +65,6 @@ public class SecurityConfig {
 
         return http.build();
     }
-
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
