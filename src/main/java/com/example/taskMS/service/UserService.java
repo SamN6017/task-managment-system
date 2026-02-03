@@ -40,7 +40,7 @@ public class UserService {
                 .build();
     }
 
-    public User createEmployee(UserRegistrationDTO dto) {
+    public String createEmployee(UserRegistrationDTO dto) {
         // 1. Get current logged-in user (The one performing the creation)
         String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
         User creator = userRepository.findByEmail(currentEmail)
@@ -59,8 +59,8 @@ public class UserService {
                 .company(creator.getCompany()) // Must be same company
                 .reportsTo(supervisor) // Links them to the hierarchy
                 .build();
-
-        return userRepository.save(newUser);
+        userRepository.save(newUser);
+        return "added" + newUser.getName();
     }
 
     @Transactional

@@ -2,7 +2,6 @@ package com.example.taskMS.controller;
 
 import com.example.taskMS.dto.UserProfileDTO;
 import com.example.taskMS.dto.UserRegistrationDTO;
-import com.example.taskMS.model.User;
 import com.example.taskMS.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -28,4 +27,11 @@ public class UserController {
     public ResponseEntity<List<UserProfileDTO>> getTeamMembers() {
         return ResponseEntity.ok(userService.getMySubordinates());
     }
+
+    @PreAuthorize("hasAnyRole('TEAM_LEADER', 'MANAGER', 'CEO')")
+    @PostMapping("/add-employee")
+    public ResponseEntity<String> createEmployee(@RequestBody UserRegistrationDTO dto) {
+        return ResponseEntity.ok(userService.createEmployee(dto));
+    }
+
 }
