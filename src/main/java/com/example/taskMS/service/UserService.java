@@ -46,21 +46,23 @@ public class UserService {
         User creator = userRepository.findByEmail(currentEmail)
                 .orElseThrow(() -> new RuntimeException("Creator not found"));
 
-        // 2. Fetch the assigned Manager/Supervisor
-        User supervisor = userRepository.findById(dto.getReportsToId())
-                .orElseThrow(() -> new RuntimeException("Supervisor not found"));
+        // 2. Fetch the assigned Manager/Supervisor by EMAIL instead of ID
+        // We use the new reportsToEmail field from your DTO
+        User supervisor = userRepository.findByEmail(dto.getReportsToEmail())
+                .orElseThrow(() -> new RuntimeException("Supervisor not found with email: " + dto.getReportsToEmail()));
 
         // 3. Create New User
         User newUser = User.builder()
                 .name(dto.getName())
                 .email(dto.getEmail())
                 .password(passwordEncoder.encode(dto.getPassword()))
-                .role(dto.getRole()) // CEO assigns the role (MANAGER, TEAM_LEADER, etc.)
-                .company(creator.getCompany()) // Must be same company
-                .reportsTo(supervisor) // Links them to the hierarchy
+                .role(dto.getRole())
+                .company(creator.getCompany())
+                .reportsTo(supervisor) // Hibernate handles the ID mapping automatically here
                 .build();
+
         userRepository.save(newUser);
-        return "added" + newUser.getName();
+        return "Added " + newUser.getName() + " reporting to " + supervisor.getName();
     }
 
     @Transactional

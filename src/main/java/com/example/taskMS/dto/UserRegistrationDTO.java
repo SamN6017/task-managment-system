@@ -9,5 +9,5 @@ public class UserRegistrationDTO {
     private String email;
     private String password;
     private Role role; // MANAGER, TEAM_LEADER, or TEAM_MEMBER
-    private Long reportsToId; // The ID of the boss
+    private String reportsToEmail;
 }
