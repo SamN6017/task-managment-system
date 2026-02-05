@@ -43,9 +43,11 @@ public class User {
     private Company company;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "manager_id")
-    private User reportsTo; // This is the user's direct supervisor
+    // We map this to a column in DB (e.g., manager_email) and
+    // link it to the 'email' column of the target User entity.
+    @JoinColumn(name = "manager_email", referencedColumnName = "email")
+    private User reportsTo;
 
     @OneToMany(mappedBy = "reportsTo")
-    private List<User> subordinates; // List of people reporting to this user
+    private List<User> subordinates;
 }

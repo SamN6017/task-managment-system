@@ -42,6 +42,7 @@ public class UserService {
 
     public String createEmployee(UserRegistrationDTO dto) {
         // 1. Get current logged-in user (The one performing the creation)
+        System.out.println("createEmployee: " + dto);
         String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
         User creator = userRepository.findByEmail(currentEmail)
                 .orElseThrow(() -> new RuntimeException("Creator not found"));
